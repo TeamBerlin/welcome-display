@@ -38,14 +38,19 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
+    html {
+      /* +20% Skalierung für 55-Zoll-Display */
+      zoom: 1.2;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--graphite-10);
       color: var(--text-main);
-      height: 100vh;
-      width: 100vw;
+      height: 83.333vh;
+      width: 83.333vw;
       overflow: hidden;
-      border-top: 8px solid var(--brand-50);
+      border-top: 7px solid var(--brand-50);
       display: flex;
       flex-direction: column;
       position: relative;
@@ -90,8 +95,8 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 36px 44px 32px;
-      gap: 24px;
+      padding: 32px 40px 28px;
+      gap: 22px;
       max-width: 1080px;
       width: 100%;
       margin: 0 auto;
@@ -210,12 +215,12 @@
     .hero-card {
       background: var(--card-bg);
       border-radius: 20px;
-      padding: 28px 32px;
+      padding: 26px 30px;
       box-shadow: var(--shadow-hero);
       border-left: 6px solid var(--brand-50);
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 16px;
       transition: all 0.35s ease;
     }
     .hero-top {
@@ -417,20 +422,20 @@
     .news-box {
       background: var(--card-bg);
       border-radius: 20px;
-      padding: 20px 26px;
+      padding: 18px 24px;
       box-shadow: var(--shadow-card);
       border: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
-      gap: 22px;
+      gap: 20px;
       cursor: pointer;
       position: relative;
       overflow: hidden;
-      min-height: 142px;
+      min-height: 132px;
     }
     .news-media {
-      width: 168px;
-      height: 102px;
+      width: 156px;
+      height: 96px;
       border-radius: 14px;
       background: linear-gradient(135deg, #1F1F1F 0%, #3A3A3A 100%);
       display: flex;
@@ -598,7 +603,7 @@
     <main class="agenda-section">
       <div class="section-label">
         <span>Heutige Termine & Besucher</span>
-        <span id="sync-status">Live verbunden</span>
+        <span id="sync-status">Synchronisiere Zeit...</span>
       </div>
 
       <div id="hero-container"></div>
@@ -643,18 +648,60 @@
   </div>
 
   <script>
-    // Eure angebundene SharePoint-Schnittstelle
     const SHAREPOINT_API_URL = "https://default36839a657f3f4bac9ea4f571f10a9a.03.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/01/workflows/bbe3d6d93db24f69a48d4e0f5659b684/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=gw0IjST-Ps2ZlalS7D6rXVf1tKRjLfsEjNvw-65ixhc";
-
-    // Koordinaten für Live-Wetter (Berlin)
     const WEATHER_LAT = 52.52;
     const WEATHER_LON = 13.405;
 
+    // SharePoint-Zeitzonen-Korrektur: Eure SP-Site speichert in US Pacific Time (UTC-8 / -7),
+    // wodurch 08:30 Uhr als 13:30Z bzw. 16:30Z ankommt -> wir korrigieren auf die echte Berliner Ortszeit.
+    const SHAREPOINT_HOUR_OFFSET = -5; // 13:30Z -> 08:30 Uhr, 20:00Z -> 15:00 Uhr
+
+    let internetTimeOffsetMs = 0; // Differenz zwischen Internet-Atomzeit und verstellter PC-Uhr
     let appointments = [];
     let weatherData = null;
     let currentNewsIdx = 0;
 
-    // Viessmann News & Clips für den unteren Bereich
+    // Exakte Internet-Uhrzeit abrufen (unabhängig von der PC-Systemuhr)
+    async function syncInternetTime() {
+      try {
+        const reqStart = Date.now();
+        const res = await fetch("https://timeapi.io/api/Time/current/zone?timeZone=Europe/Berlin");
+        const data = await res.json();
+        const reqEnd = Date.now();
+        const latency = (reqEnd - reqStart) / 2;
+        if (data && data.dateTime) {
+          // Berechne exakten Zeitstempel aus der Berliner Internetzeit
+          const serverLocal = new Date(data.dateTime);
+          // Vergleich gegen lokale Systemzeit
+          internetTimeOffsetMs = (serverLocal.getTime() + latency) - Date.now();
+          updateEnvironment();
+          renderAppointments();
+        }
+      } catch (e) {
+        // Fallback über HTTP Date-Header von Open-Meteo
+        try {
+          const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LAT}&longitude=${WEATHER_LON}&current=temperature_2m`);
+          const dateHeader = res.headers.get("Date");
+          if (dateHeader) {
+            const netUtcMs = new Date(dateHeader).getTime();
+            internetTimeOffsetMs = netUtcMs - Date.now();
+            updateEnvironment();
+            renderAppointments();
+          }
+        } catch (err) {
+          console.warn("Zeit-Sync Fallback auf Systemuhr:", err);
+        }
+      }
+    }
+
+    // Liefert immer die exakte aktuelle Berliner Zeit (inkl. Internet-Korrektur)
+    function getNowBerlin() {
+      const correctedMs = Date.now() + internetTimeOffsetMs;
+      // Erzwinge Europe/Berlin Zeitzone unabhängig von den Windows-Zeitzoneneinstellungen des PCs
+      const berlinStr = new Date(correctedMs).toLocaleString("en-US", { timeZone: "Europe/Berlin" });
+      return new Date(berlinStr);
+    }
+
     const newsItems = [
       {
         tag: "Produkt-Highlight · Video",
@@ -682,7 +729,6 @@
       }
     ];
 
-    // Moderne Kategorie-Icons & Farben (Viessmann Additional Palette)
     function getCategoryStyle(catRaw) {
       const c = (catRaw || "").toLowerCase();
       if (c.includes("solar")) {
@@ -699,7 +745,6 @@
           icon: `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2c.5 4-3 6-3 10a5 5 0 0 0 10 0c0-3.5-2.5-5.5-2.5-8.5-1 1.5-2 2-2.5 1.5C14 3.5 13 2.5 12 2z"/></svg>`
         };
       }
-      // Standard: Wärmepumpe / Klima
       return {
         bg: "rgba(2, 132, 199, 0.14)",
         color: "#0284C7",
@@ -707,9 +752,8 @@
       };
     }
 
-    // Uhrzeit, Tageszeit-Optik & Jahreszeit aktualisieren
     function updateEnvironment() {
-      const now = new Date();
+      const now = getNowBerlin();
       const hours = now.getHours();
       const minutes = String(now.getMinutes()).padStart(2, "0");
       document.getElementById("clock-time").textContent = `${String(hours).padStart(2, "0")}:${minutes}`;
@@ -717,21 +761,18 @@
       const dateStr = now.toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
       document.getElementById("clock-date").textContent = dateStr;
 
-      // Begrüßung
       let greet = "Guten Tag";
       if (hours < 11) greet = "Guten Morgen";
       else if (hours >= 17) greet = "Guten Abend";
       document.getElementById("greeting-text").textContent = greet;
 
-      // Abendmodus ab 17:00 Uhr
       if (hours >= 17 || hours < 6) {
         document.body.classList.add("evening-mode");
       } else {
         document.body.classList.remove("evening-mode");
       }
 
-      // Jahreszeit & Monat
-      const month = now.getMonth(); // 0 = Jan ... 10 = Nov
+      const month = now.getMonth();
       const root = document.documentElement.style;
       const seasonLabel = document.getElementById("season-label");
       if (month >= 2 && month <= 4) {
@@ -753,26 +794,31 @@
       }
     }
 
-    // SharePoint-Zeitstempel in lokale Date-Objekte umwandeln
+    // Wandelt SharePoint-UTC-Zeitstempel exakt in die eingetragene Berliner Ortszeit um
     function parseSharePointDate(isoStr) {
-      if (!isoStr) return new Date();
-      // SharePoint liefert lokale Eingaben oft mit Z-Suffix; wir interpretieren die Uhrzeit passend zur Ortszeit
-      const d = new Date(isoStr);
+      if (!isoStr) return getNowBerlin();
+      const clean = isoStr.replace("Z", "");
+      const d = new Date(clean);
+      d.setHours(d.getHours() + SHAREPOINT_HOUR_OFFSET);
       return d;
     }
 
-    // Termine rendern (Intelligenter Zeit-Fokus)
-    function renderAppointments() {
-      const now = new Date();
-      const todayKey = now.toISOString().slice(0, 10);
+    function formatDateKey(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
 
-      // Filtere aktive Termine für heute (falls heute keine drin sind, zeige alle aktiven als Vorschau)
+    function renderAppointments() {
+      const now = getNowBerlin();
+      const todayKey = formatDateKey(now);
+
       let activeList = appointments.filter(a => a.aktiv !== false);
-      let todays = activeList.filter(a => (a.datumZeit || "").startsWith(todayKey));
+      let todays = activeList.filter(a => formatDateKey(parseSharePointDate(a.datumZeit)) === todayKey);
       let isPreviewNextDays = false;
 
       if (todays.length === 0 && activeList.length > 0) {
-        // Zeige die nächsten anstehenden Termine, falls heute noch nichts eingetragen ist
         todays = activeList
           .filter(a => parseSharePointDate(a.datumZeit) >= new Date(now.getTime() - 12 * 3600000))
           .sort((a, b) => parseSharePointDate(a.datumZeit) - parseSharePointDate(b.datumZeit));
@@ -797,7 +843,6 @@
         return;
       }
 
-      // Einteilen in: Vergangen (> 60 Min. her) vs. Aktuell/Kommend
       const past = [];
       const currentAndFuture = [];
 
@@ -811,13 +856,12 @@
         }
       });
 
-      // Hero = erster aktueller/kommender Termin (oder letzter vergangener, falls alle vorbei)
       const heroItem = currentAndFuture.length > 0 ? currentAndFuture.shift() : past.pop();
 
       if (heroItem) {
         const start = parseSharePointDate(heroItem.datumZeit);
-        const timeStr = start.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr";
-        const dayHint = isPreviewNextDays ? start.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) + " · " : "";
+        const timeStr = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")} Uhr`;
+        const dayHint = isPreviewNextDays ? `${String(start.getDate()).padStart(2, "0")}.${String(start.getMonth() + 1).padStart(2, "0")}. · ` : "";
         const diffMin = Math.round((start - now) / 60000);
 
         let statusText = "Nächster Termin";
@@ -851,11 +895,10 @@
           </div>`;
       }
 
-      // Kommende Termine
       currentAndFuture.forEach(item => {
         const start = parseSharePointDate(item.datumZeit);
-        const timeStr = start.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-        const dayHint = isPreviewNextDays ? start.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) + " · " : "";
+        const timeStr = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`;
+        const dayHint = isPreviewNextDays ? `${String(start.getDate()).padStart(2, "0")}.${String(start.getMonth() + 1).padStart(2, "0")}. · ` : "";
         const style = getCategoryStyle(item.kategorie);
         const isPhone = (item.raum || "").toLowerCase().includes("telefon");
 
@@ -881,12 +924,11 @@
         upEl.appendChild(card);
       });
 
-      // Vergangene Termine (klein im Hintergrund)
       if (past.length > 0) {
         pastEl.innerHTML = `<div class="section-label" style="font-size:11px;margin-top:4px;">Bereits stattgefunden</div>`;
         past.forEach(item => {
           const start = parseSharePointDate(item.datumZeit);
-          const timeStr = start.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+          const timeStr = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`;
           const row = document.createElement("div");
           row.className = "past-card";
           row.innerHTML = `
@@ -901,7 +943,6 @@
       }
     }
 
-    // Daten live aus SharePoint abrufen
     async function fetchAppointments() {
       try {
         const res = await fetch(SHAREPOINT_API_URL);
@@ -909,7 +950,8 @@
         const data = await res.json();
         if (Array.isArray(data)) {
           appointments = data;
-          const nowStr = new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+          const now = getNowBerlin();
+          const nowStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
           document.getElementById("sync-status").textContent = `Aktualisiert ${nowStr}`;
           renderAppointments();
         }
@@ -919,7 +961,6 @@
       }
     }
 
-    // Live-Wetter abrufen (Open-Meteo, kostenlos & ohne Key)
     async function fetchWeather() {
       try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LAT}&longitude=${WEATHER_LON}&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code&timezone=Europe%2FBerlin&forecast_days=1`;
@@ -948,7 +989,7 @@
       const grid = document.getElementById("forecast-grid");
       grid.innerHTML = "";
       if (weatherData && weatherData.hourly) {
-        const nowH = new Date().getHours();
+        const nowH = getNowBerlin().getHours();
         [nowH, nowH + 2, nowH + 4, nowH + 6].forEach(h => {
           const idx = Math.min(h, 23);
           const info = mapWeatherCode(weatherData.hourly.weather_code[idx]);
@@ -964,7 +1005,6 @@
       document.getElementById("weather-modal").classList.add("open");
     }
 
-    // News-Rotation
     function renderNews() {
       const item = newsItems[currentNewsIdx];
       document.getElementById("news-tag").textContent = item.tag;
@@ -990,14 +1030,16 @@
     }
 
     // Start & Intervalle
+    syncInternetTime();
     updateEnvironment();
     renderNews();
     fetchAppointments();
     fetchWeather();
 
-    setInterval(updateEnvironment, 15000);
+    setInterval(syncInternetTime, 300000); // Alle 5 Min. Internet-Atomzeit nachjustieren
+    setInterval(updateEnvironment, 10000);
     setInterval(renderAppointments, 30000);
-    setInterval(fetchAppointments, 60000); // Alle 60 Sek. frische SharePoint-Daten
+    setInterval(fetchAppointments, 60000);
     setInterval(fetchWeather, 900000);
     setInterval(() => {
       if (!document.getElementById("news-modal").classList.contains("open")) {
