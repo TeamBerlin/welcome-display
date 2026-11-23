@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Viessmann Welcome Display</title>
+  <style>
+    :root {
+      --brand-50: #FF3B00;
+      --graphite-10: #F4F4F4;
+      --graphite-20: #E6E6E6;
+      --graphite-30: #CCCCCC;
+      --graphite-50: #8C8C8C;
+      --graphite-70: #4A4A4A;
+      --graphite-80: #333333;
+      --graphite-90: #1F1F1F;
+      --graphite-100: #111111;
+      --card-bg: #FFFFFF;
+      --text-main: #1A1A1A;
+      --text-muted: #595959;
+      --border-subtle: rgba(0, 0, 0, 0.08);
+      --season-accent: #D97706;
+      --season-tint: rgba(217, 119, 6, 0.08);
+      --shadow-hero: 0 18px 40px rgba(0, 0, 0, 0.08);
+      --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.04);
+    }
+
+    body.evening-mode {
+      --graphite-10: #141414;
+      --graphite-20: #222222;
+      --card-bg: #1E1E1E;
+      --text-main: #F5F5F5;
+      --text-muted: #A3A3A3;
+      --border-subtle: rgba(255, 255, 255, 0.1);
+      --shadow-hero: 0 20px 50px rgba(0, 0, 0, 0.45);
+      --shadow-card: 0 4px 18px rgba(0, 0, 0, 0.25);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--graphite-10);
+      color: var(--text-main);
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      border-top: 8px solid var(--brand-50);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: background-color 0.8s ease, color 0.8s ease;
+    }
+
+    /* Dezente Viessmann-Architektur-Hintergrundgrafik */
+    .bg-architecture {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .bg-architecture svg {
+      position: absolute;
+      right: -6%;
+      bottom: 14%;
+      width: 82%;
+      height: auto;
+      opacity: 0.055;
+      stroke: var(--text-main);
+      transition: opacity 0.8s ease;
+    }
+    body.evening-mode .bg-architecture svg { opacity: 0.04; }
+    .season-glow {
+      position: absolute;
+      top: -120px;
+      right: -120px;
+      width: 520px;
+      height: 520px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--season-tint) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Hauptcontainer */
+    .screen {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 36px 44px 32px;
+      gap: 24px;
+      max-width: 1080px;
+      width: 100%;
+      margin: 0 auto;
+      height: 100%;
+    }
+
+    /* 1. Header: Begrüßung, Zeit & Wetter */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+    }
+    .greeting-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .season-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--season-accent);
+    }
+    .season-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--season-accent);
+    }
+    h1#greeting-text {
+      font-size: 46px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+    }
+    .sub-greeting {
+      font-size: 19px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .status-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+    }
+    .clock-box {
+      text-align: right;
+    }
+    #clock-time {
+      font-size: 42px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    #clock-date {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Kompaktes Wetter-Widget */
+    .weather-chip {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      padding: 10px 18px;
+      border-radius: 999px;
+      box-shadow: var(--shadow-card);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .weather-chip:active { transform: scale(0.97); }
+    .weather-temp {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .weather-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    /* 2. Besucher-Bühne */
+    .agenda-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 0;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .agenda-section::-webkit-scrollbar { width: 0; }
+
+    .section-label {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Hero-Karte (Aktueller / Nächster Termin) */
+    .hero-card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 28px 32px;
+      box-shadow: var(--shadow-hero);
+      border-left: 6px solid var(--brand-50);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      transition: all 0.35s ease;
+    }
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 59, 0, 0.1);
+      color: var(--brand-50);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--brand-50);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 1; }
+      50% { transform: scale(1.35); opacity: 0.45; }
+      100% { transform: scale(0.95); opacity: 1; }
+    }
+    .hero-time-room {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .hero-time {
+      font-size: 28px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .room-pill {
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 600;
+      background: var(--graphite-10);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+    .room-pill.phone {
+      background: rgba(220, 38, 38, 0.1);
+      color: #DC2626;
+      border-color: rgba(220, 38, 38, 0.2);
+    }
+
+    .hero-main {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+    }
+    .cat-icon-box {
+      width: 68px;
+      height: 68px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .hero-guest {
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+    .hero-topic {
+      font-size: 19px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.35;
+    }
+    .hero-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+    .hero-footer strong { color: var(--text-main); font-weight: 600; }
+
+    /* Kommende Termine */
+    .upcoming-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .apt-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 18px 24px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .apt-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .apt-icon-sm {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .apt-info { flex: 1; min-width: 0; }
+    .apt-guest {
+      font-size: 21px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .apt-sub {
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .apt-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .apt-time {
+      font-size: 20px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .apt-details {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, margin-top 0.3s ease;
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+    .apt-card.expanded .apt-details {
+      max-height: 140px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    /* Vergangene Termine (kleiner & dezent im Hintergrund) */
+    .past-section {
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      opacity: 0.58;
+      transform: scale(0.97);
+      transform-origin: top center;
+    }
+    .past-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 11px 18px;
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .past-left { display: flex; align-items: center; gap: 10px; }
+    .past-check { color: #16A34A; font-weight: 700; }
+
+    /* Empty State */
+    .empty-card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 40px 32px;
+      text-align: center;
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border-subtle);
+    }
+    .empty-card h2 { font-size: 24px; margin-bottom: 8px; }
+    .empty-card p { color: var(--text-muted); font-size: 17px; }
+
+    /* 3. Moderner News- & Video-Bereich */
+    .news-box {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 20px 26px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      min-height: 142px;
+    }
+    .news-media {
+      width: 168px;
+      height: 102px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #1F1F1F 0%, #3A3A3A 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+      color: #FFFFFF;
+    }
+    .news-media svg { width: 100%; height: 100%; }
+    .play-badge {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255, 59, 0, 0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .news-content { flex: 1; min-width: 0; }
+    .news-tag {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--brand-50);
+      margin-bottom: 4px;
+    }
+    .news-title {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 6px;
+    }
+    .news-summary {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .news-dots {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .news-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--graphite-30);
+      transition: all 0.3s ease;
+    }
+    .news-dot.active {
+      height: 20px;
+      background: var(--brand-50);
+    }
+
+    /* Overlays (Wetter & News Detail) */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(6px);
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 36px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-card {
+      background: var(--card-bg);
+      color: var(--text-main);
+      border-radius: 24px;
+      padding: 34px;
+      width: 100%;
+      max-width: 640px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+      border-top: 6px solid var(--brand-50);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-title { font-size: 26px; font-weight: 700; }
+    .pill-btn {
+      background: var(--brand-50);
+      color: #FFFFFF;
+      border: none;
+      padding: 12px 26px;
+      border-radius: 999px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .forecast-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 22px 0;
+    }
+    .forecast-item {
+      background: var(--graphite-10);
+      border-radius: 16px;
+      padding: 16px 12px;
+      text-align: center;
+    }
+    .forecast-hour { font-size: 14px; color: var(--text-muted); margin-bottom: 8px; }
+    .forecast-temp { font-size: 22px; font-weight: 700; margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+  <!-- Dezente Viessmann Architektur-Grafik im Hintergrund -->
+  <div class="season-glow"></div>
+  <div class="bg-architecture">
+    <svg viewBox="0 0 500 420" fill="none" stroke-width="2.2">
+      <path d="M40 210 L250 45 L460 210" />
+      <path d="M85 175 L85 390 L415 390 L415 175" />
+      <rect x="130" y="235" width="75" height="120" rx="6" />
+      <circle cx="167" cy="272" r="20" />
+      <circle cx="167" cy="322" r="20" />
+      <rect x="245" y="195" width="52" height="82" rx="4" />
+      <path d="M271 277 L271 335 L335 335" />
+      <rect x="335" y="255" width="48" height="105" rx="8" />
+    </svg>
+  </div>
+
+  <div class="screen">
+    <!-- 1. Header -->
+    <header>
+      <div class="greeting-block">
+        <div class="season-pill">
+          <span class="season-dot"></span>
+          <span id="season-label">Willkommen im Haus</span>
+        </div>
+        <h1 id="greeting-text">Guten Tag</h1>
+        <div class="sub-greeting">Schön, dass Sie heute bei uns sind.</div>
+      </div>
+
+      <div class="status-right">
+        <div class="clock-box">
+          <div id="clock-time">--:--</div>
+          <div id="clock-date">--. -------- ----</div>
+        </div>
+        <div class="weather-chip" onclick="openWeatherModal()">
+          <span id="weather-icon-sm">☀️</span>
+          <div>
+            <div class="weather-temp" id="weather-temp-sm">--°C</div>
+            <div class="weather-desc" id="weather-desc-sm">Berlin · Laden...</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 2. Besucher-Bühne -->
+    <main class="agenda-section">
+      <div class="section-label">
+        <span>Heutige Termine & Besucher</span>
+        <span id="sync-status">Live verbunden</span>
+      </div>
+
+      <div id="hero-container"></div>
+      <div class="upcoming-list" id="upcoming-container"></div>
+      <div class="past-section" id="past-container"></div>
+    </main>
+
+    <!-- 3. News- & Video-Bereich -->
+    <section class="news-box" onclick="openNewsModal()">
+      <div class="news-media" id="news-media-box"></div>
+      <div class="news-content">
+        <div class="news-tag" id="news-tag">Viessmann Aktuell</div>
+        <div class="news-title" id="news-title">Vitocal 250-A: Die neue Wärmepumpen-Generation</div>
+        <div class="news-summary" id="news-summary">Entdecken Sie flüsterleisen Betrieb, höchste Vorlauftemperaturen bis 70 °C und smarte Energie-Vernetzung live in unserer Ausstellung.</div>
+      </div>
+      <div class="news-dots" id="news-dots"></div>
+    </section>
+  </div>
+
+  <!-- Wetter-Overlay -->
+  <div class="modal-backdrop" id="weather-modal" onclick="closeModals(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">Wettervorhersage · Berlin</div>
+        <button class="pill-btn" onclick="closeModals()">Schließen</button>
+      </div>
+      <p style="color:var(--text-muted);font-size:16px;" id="weather-modal-summary">Aktuelle Wetterdaten für Ihren Besuchstag.</p>
+      <div class="forecast-grid" id="forecast-grid"></div>
+    </div>
+  </div>
+
+  <!-- News- & Video-Overlay -->
+  <div class="modal-backdrop" id="news-modal" onclick="closeModals(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-news-title">News Detail</div>
+        <button class="pill-btn" onclick="closeModals()">Schließen</button>
+      </div>
+      <div id="modal-news-visual" style="border-radius:16px;overflow:hidden;margin-bottom:18px;background:#1A1A1A;height:220px;display:flex;align-items:center;justify-content:center;"></div>
+      <p style="font-size:18px;line-height:1.55;color:var(--text-main);" id="modal-news-body"></p>
+    </div>
+  </div>
+
+  <script>
+    // Eure angebundene SharePoint-Schnittstelle
+    const SHAREPOINT_API_URL = "https://default36839a657f3f4bac9ea4f571f10a9a.03.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/01/workflows/bbe3d6d93db24f69a48d4e0f5659b684/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=gw0IjST-Ps2ZlalS7D6rXVf1tKRjLfsEjNvw-65ixhc";
+
+    // Koordinaten für Live-Wetter (Berlin)
+    const WEATHER_LAT = 52.52;
+    const WEATHER_LON = 13.405;
+
+    let appointments = [];
+    let weatherData = null;
+    let currentNewsIdx = 0;
+
+    // Viessmann News & Clips für den unteren Bereich
+    const newsItems = [
+      {
+        tag: "Produkt-Highlight · Video",
+        title: "Vitocal 250-A: Wärmepumpe für die Modernisierung",
+        summary: "Vorlauftemperaturen bis 70 °C, natürliches Kältemittel R290 und einfachste Einbindung bestehender Heizkörper – erleben Sie die Anlage direkt vor Ort.",
+        body: "Die Vitocal 250-A wurde speziell für die Modernisierung entwickelt. Dank Vorlauftemperaturen bis 70 °C können bestehende Radiatoren meist weiter genutzt werden. Fragen Sie Ihren Fachberater gerne nach einer Live-Vorführung in unserer Ausstellung.",
+        svg: `<svg viewBox="0 0 220 130" fill="none"><rect width="220" height="130" fill="#1F1F1F"/><rect x="45" y="25" width="54" height="80" rx="6" stroke="#FF3B00" stroke-width="2.5"/><circle cx="72" cy="52" r="14" stroke="#FFFFFF" stroke-width="2"/><circle cx="72" cy="84" r="14" stroke="#FFFFFF" stroke-width="2"/><path d="M115 65 H165" stroke="#FF3B00" stroke-width="2.5" stroke-dasharray="4 4"/><rect x="145" y="32" width="36" height="66" rx="4" stroke="#FFFFFF" stroke-width="2"/></svg>`,
+        isVideo: true
+      },
+      {
+        tag: "Integriertes Energiesystem",
+        title: "Wärmepumpe + Vitocharge VX3 Stromspeicher",
+        summary: "Selbst erzeugten Solarstrom intelligent für Heizung, Warmwasser und E-Mobilität nutzen – gesteuert über Viessmann One Base.",
+        body: "Mit Viessmann One Base vernetzen sich Wärmepumpe, Photovoltaik und der Stromspeicher Vitocharge VX3 zu einem nahtlosen Gesamtsystem. Über die ViCare App behalten Hausbesitzer Energieflüsse und Einsparungen jederzeit im Blick.",
+        svg: `<svg viewBox="0 0 220 130" fill="none"><rect width="220" height="130" fill="#252525"/><path d="M55 58 L110 22 L165 58" stroke="#FF3B00" stroke-width="3"/><rect x="72" y="58" width="76" height="48" stroke="#FFFFFF" stroke-width="2"/><path d="M110 70 L102 84 H114 L106 98" stroke="#F59E0B" stroke-width="2.5"/></svg>`,
+        isVideo: false
+      },
+      {
+        tag: "Fachpartner Akademie",
+        title: "Schulungen & Praxistrainings in der Ausstellung",
+        summary: "Von der hydraulischen Einbindung bis zur digitalen Inbetriebnahme: Unsere aktuellen Termine für Fachhandwerker.",
+        body: "In unseren Praxis-Seminaren trainieren Fachpartner direkt an betriebsbereiten Wärmepumpen, Brennwertgeräten und Speicherlösungen. Sprechen Sie unser Team vor Ort gerne auf freie Plätze an.",
+        svg: `<svg viewBox="0 0 220 130" fill="none"><rect width="220" height="130" fill="#1B2430"/><circle cx="85" cy="54" r="14" stroke="#38BDF8" stroke-width="2.2"/><path d="M62 96 C62 80 108 80 108 96" stroke="#38BDF8" stroke-width="2.2"/><rect x="125" y="40" width="44" height="52" rx="4" stroke="#FFFFFF" stroke-width="2"/></svg>`,
+        isVideo: false
+      }
+    ];
+
+    // Moderne Kategorie-Icons & Farben (Viessmann Additional Palette)
+    function getCategoryStyle(catRaw) {
+      const c = (catRaw || "").toLowerCase();
+      if (c.includes("solar")) {
+        return {
+          bg: "rgba(245, 158, 11, 0.14)",
+          color: "#D97706",
+          icon: `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`
+        };
+      }
+      if (c.includes("gas")) {
+        return {
+          bg: "rgba(16, 185, 129, 0.14)",
+          color: "#059669",
+          icon: `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2c.5 4-3 6-3 10a5 5 0 0 0 10 0c0-3.5-2.5-5.5-2.5-8.5-1 1.5-2 2-2.5 1.5C14 3.5 13 2.5 12 2z"/></svg>`
+        };
+      }
+      // Standard: Wärmepumpe / Klima
+      return {
+        bg: "rgba(2, 132, 199, 0.14)",
+        color: "#0284C7",
+        icon: `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>`
+      };
+    }
+
+    // Uhrzeit, Tageszeit-Optik & Jahreszeit aktualisieren
+    function updateEnvironment() {
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      document.getElementById("clock-time").textContent = `${String(hours).padStart(2, "0")}:${minutes}`;
+
+      const dateStr = now.toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+      document.getElementById("clock-date").textContent = dateStr;
+
+      // Begrüßung
+      let greet = "Guten Tag";
+      if (hours < 11) greet = "Guten Morgen";
+      else if (hours >= 17) greet = "Guten Abend";
+      document.getElementById("greeting-text").textContent = greet;
+
+      // Abendmodus ab 17:00 Uhr
+      if (hours >= 17 || hours < 6) {
+        document.body.classList.add("evening-mode");
+      } else {
+        document.body.classList.remove("evening-mode");
+      }
+
+      // Jahreszeit & Monat
+      const month = now.getMonth(); // 0 = Jan ... 10 = Nov
+      const root = document.documentElement.style;
+      const seasonLabel = document.getElementById("season-label");
+      if (month >= 2 && month <= 4) {
+        root.setProperty("--season-accent", "#10B981");
+        root.setProperty("--season-tint", "rgba(16, 185, 129, 0.1)");
+        seasonLabel.textContent = "Frühling · Willkommen";
+      } else if (month >= 5 && month <= 7) {
+        root.setProperty("--season-accent", "#F59E0B");
+        root.setProperty("--season-tint", "rgba(245, 158, 11, 0.1)");
+        seasonLabel.textContent = "Sommer · Willkommen";
+      } else if (month >= 8 && month <= 10) {
+        root.setProperty("--season-accent", "#EA580C");
+        root.setProperty("--season-tint", "rgba(234, 88, 12, 0.1)");
+        seasonLabel.textContent = "Herbst · Willkommen";
+      } else {
+        root.setProperty("--season-accent", "#0284C7");
+        root.setProperty("--season-tint", "rgba(2, 132, 199, 0.1)");
+        seasonLabel.textContent = month === 11 ? "Winterzeit · Dezember" : "Winter · Willkommen";
+      }
+    }
+
+    // SharePoint-Zeitstempel in lokale Date-Objekte umwandeln
+    function parseSharePointDate(isoStr) {
+      if (!isoStr) return new Date();
+      // SharePoint liefert lokale Eingaben oft mit Z-Suffix; wir interpretieren die Uhrzeit passend zur Ortszeit
+      const d = new Date(isoStr);
+      return d;
+    }
+
+    // Termine rendern (Intelligenter Zeit-Fokus)
+    function renderAppointments() {
+      const now = new Date();
+      const todayKey = now.toISOString().slice(0, 10);
+
+      // Filtere aktive Termine für heute (falls heute keine drin sind, zeige alle aktiven als Vorschau)
+      let activeList = appointments.filter(a => a.aktiv !== false);
+      let todays = activeList.filter(a => (a.datumZeit || "").startsWith(todayKey));
+      let isPreviewNextDays = false;
+
+      if (todays.length === 0 && activeList.length > 0) {
+        // Zeige die nächsten anstehenden Termine, falls heute noch nichts eingetragen ist
+        todays = activeList
+          .filter(a => parseSharePointDate(a.datumZeit) >= new Date(now.getTime() - 12 * 3600000))
+          .sort((a, b) => parseSharePointDate(a.datumZeit) - parseSharePointDate(b.datumZeit));
+        isPreviewNextDays = true;
+      } else {
+        todays.sort((a, b) => parseSharePointDate(a.datumZeit) - parseSharePointDate(b.datumZeit));
+      }
+
+      const heroEl = document.getElementById("hero-container");
+      const upEl = document.getElementById("upcoming-container");
+      const pastEl = document.getElementById("past-container");
+      heroEl.innerHTML = "";
+      upEl.innerHTML = "";
+      pastEl.innerHTML = "";
+
+      if (todays.length === 0) {
+        heroEl.innerHTML = `
+          <div class="empty-card">
+            <h2>Herzlich willkommen</h2>
+            <p>Aktuell stehen keine weiteren geplanten Termine auf dem Tagesplan.</p>
+          </div>`;
+        return;
+      }
+
+      // Einteilen in: Vergangen (> 60 Min. her) vs. Aktuell/Kommend
+      const past = [];
+      const currentAndFuture = [];
+
+      todays.forEach(item => {
+        const start = parseSharePointDate(item.datumZeit);
+        const diffMin = (start - now) / 60000;
+        if (diffMin < -60 && !isPreviewNextDays) {
+          past.push(item);
+        } else {
+          currentAndFuture.push(item);
+        }
+      });
+
+      // Hero = erster aktueller/kommender Termin (oder letzter vergangener, falls alle vorbei)
+      const heroItem = currentAndFuture.length > 0 ? currentAndFuture.shift() : past.pop();
+
+      if (heroItem) {
+        const start = parseSharePointDate(heroItem.datumZeit);
+        const timeStr = start.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr";
+        const dayHint = isPreviewNextDays ? start.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) + " · " : "";
+        const diffMin = Math.round((start - now) / 60000);
+
+        let statusText = "Nächster Termin";
+        if (diffMin <= 0 && diffMin >= -60) statusText = "Läuft gerade";
+        else if (diffMin > 0 && diffMin <= 30) statusText = `In ${diffMin} Min.`;
+        else if (isPreviewNextDays) statusText = "Kommender Termin";
+
+        const style = getCategoryStyle(heroItem.kategorie);
+        const isPhone = (heroItem.raum || "").toLowerCase().includes("telefon");
+
+        heroEl.innerHTML = `
+          <div class="hero-card">
+            <div class="hero-top">
+              <div class="live-badge"><span class="pulse-dot"></span>${statusText}</div>
+              <div class="hero-time-room">
+                <span class="hero-time">${dayHint}${timeStr}</span>
+                <span class="room-pill ${isPhone ? "phone" : ""}">${heroItem.raum || "Empfang"}</span>
+              </div>
+            </div>
+            <div class="hero-main">
+              <div class="cat-icon-box" style="background:${style.bg};color:${style.color};">${style.icon}</div>
+              <div>
+                <div class="hero-guest">${heroItem.gast || heroItem.titel}</div>
+                <div class="hero-topic">${heroItem.anlass || heroItem.titel || ""}</div>
+              </div>
+            </div>
+            <div class="hero-footer">
+              <span>Ihr Ansprechpartner: <strong>${heroItem.gastgeber || "Team Vor Ort"}</strong></span>
+              <span>Thema: <strong>${heroItem.kategorie || "Beratung"}</strong></span>
+            </div>
+          </div>`;
+      }
+
+      // Kommende Termine
+      currentAndFuture.forEach(item => {
+        const start = parseSharePointDate(item.datumZeit);
+        const timeStr = start.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+        const dayHint = isPreviewNextDays ? start.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) + " · " : "";
+        const style = getCategoryStyle(item.kategorie);
+        const isPhone = (item.raum || "").toLowerCase().includes("telefon");
+
+        const card = document.createElement("div");
+        card.className = "apt-card";
+        card.onclick = () => card.classList.toggle("expanded");
+        card.innerHTML = `
+          <div class="apt-row">
+            <div class="apt-icon-sm" style="background:${style.bg};color:${style.color};">${style.icon}</div>
+            <div class="apt-info">
+              <div class="apt-guest">${item.gast || item.titel}</div>
+              <div class="apt-sub">${item.kategorie || "Termin"} · Gastgeber: ${item.gastgeber || "-"}</div>
+            </div>
+            <div class="apt-right">
+              <span class="room-pill ${isPhone ? "phone" : ""}">${item.raum || "-"}</span>
+              <span class="apt-time">${dayHint}${timeStr}</span>
+            </div>
+          </div>
+          <div class="apt-details">
+            <strong>Anlass:</strong> ${item.anlass || item.titel || "-"}<br>
+            <strong>Ansprechpartner:</strong> ${item.gastgeber || "-"}
+          </div>`;
+        upEl.appendChild(card);
+      });
+
+      // Vergangene Termine (klein im Hintergrund)
+      if (past.length > 0) {
+        pastEl.innerHTML = `<div class="section-label" style="font-size:11px;margin-top:4px;">Bereits stattgefunden</div>`;
+        past.forEach(item => {
+          const start = parseSharePointDate(item.datumZeit);
+          const timeStr = start.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+          const row = document.createElement("div");
+          row.className = "past-card";
+          row.innerHTML = `
+            <div class="past-left">
+              <span class="past-check">✓</span>
+              <strong>${item.gast || item.titel}</strong>
+              <span style="color:var(--text-muted);">(${item.raum || "-"})</span>
+            </div>
+            <span style="color:var(--text-muted);font-variant-numeric:tabular-nums;">${timeStr} Uhr</span>`;
+          pastEl.appendChild(row);
+        });
+      }
+    }
+
+    // Daten live aus SharePoint abrufen
+    async function fetchAppointments() {
+      try {
+        const res = await fetch(SHAREPOINT_API_URL);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          appointments = data;
+          const nowStr = new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+          document.getElementById("sync-status").textContent = `Aktualisiert ${nowStr}`;
+          renderAppointments();
+        }
+      } catch (err) {
+        document.getElementById("sync-status").textContent = "Offline-Puffer aktiv";
+        console.error("SharePoint Abruf:", err);
+      }
+    }
+
+    // Live-Wetter abrufen (Open-Meteo, kostenlos & ohne Key)
+    async function fetchWeather() {
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LAT}&longitude=${WEATHER_LON}&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code&timezone=Europe%2FBerlin&forecast_days=1`;
+        const res = await fetch(url);
+        weatherData = await res.json();
+        const temp = Math.round(weatherData.current.temperature_2m);
+        const info = mapWeatherCode(weatherData.current.weather_code);
+        document.getElementById("weather-icon-sm").textContent = info.icon;
+        document.getElementById("weather-temp-sm").textContent = `${temp}°C`;
+        document.getElementById("weather-desc-sm").textContent = `Berlin · ${info.label}`;
+      } catch (e) {
+        document.getElementById("weather-desc-sm").textContent = "Berlin";
+      }
+    }
+
+    function mapWeatherCode(code) {
+      if (code === 0) return { icon: "☀️", label: "Klar" };
+      if (code <= 3) return { icon: "⛅", label: "Heiter" };
+      if (code <= 48) return { icon: "🌫️", label: "Nebel" };
+      if (code <= 67) return { icon: "🌧️", label: "Regen" };
+      if (code <= 77) return { icon: "❄️", label: "Schnee" };
+      return { icon: "🌦️", label: "Wechselhaft" };
+    }
+
+    function openWeatherModal() {
+      const grid = document.getElementById("forecast-grid");
+      grid.innerHTML = "";
+      if (weatherData && weatherData.hourly) {
+        const nowH = new Date().getHours();
+        [nowH, nowH + 2, nowH + 4, nowH + 6].forEach(h => {
+          const idx = Math.min(h, 23);
+          const info = mapWeatherCode(weatherData.hourly.weather_code[idx]);
+          const t = Math.round(weatherData.hourly.temperature_2m[idx]);
+          grid.innerHTML += `
+            <div class="forecast-item">
+              <div class="forecast-hour">${String(idx).padStart(2, "0")}:00 Uhr</div>
+              <div style="font-size:28px;">${info.icon}</div>
+              <div class="forecast-temp">${t}°C</div>
+            </div>`;
+        });
+      }
+      document.getElementById("weather-modal").classList.add("open");
+    }
+
+    // News-Rotation
+    function renderNews() {
+      const item = newsItems[currentNewsIdx];
+      document.getElementById("news-tag").textContent = item.tag;
+      document.getElementById("news-title").textContent = item.title;
+      document.getElementById("news-summary").textContent = item.summary;
+      document.getElementById("news-media-box").innerHTML = item.svg + (item.isVideo ? `<div class="play-badge">▶</div>` : "");
+
+      const dots = document.getElementById("news-dots");
+      dots.innerHTML = newsItems.map((_, i) => `<div class="news-dot ${i === currentNewsIdx ? "active" : ""}"></div>`).join("");
+    }
+
+    function openNewsModal() {
+      const item = newsItems[currentNewsIdx];
+      document.getElementById("modal-news-title").textContent = item.title;
+      document.getElementById("modal-news-visual").innerHTML = item.svg;
+      document.getElementById("modal-news-body").textContent = item.body;
+      document.getElementById("news-modal").classList.add("open");
+    }
+
+    function closeModals() {
+      document.getElementById("weather-modal").classList.remove("open");
+      document.getElementById("news-modal").classList.remove("open");
+    }
+
+    // Start & Intervalle
+    updateEnvironment();
+    renderNews();
+    fetchAppointments();
+    fetchWeather();
+
+    setInterval(updateEnvironment, 15000);
+    setInterval(renderAppointments, 30000);
+    setInterval(fetchAppointments, 60000); // Alle 60 Sek. frische SharePoint-Daten
+    setInterval(fetchWeather, 900000);
+    setInterval(() => {
+      if (!document.getElementById("news-modal").classList.contains("open")) {
+        currentNewsIdx = (currentNewsIdx + 1) % newsItems.length;
+        renderNews();
+      }
+    }, 10000);
+  </script>
+</body>
+</html>
