@@ -39,18 +39,18 @@
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
     html {
-      /* +20% Skalierung für 55-Zoll-Display */
-      zoom: 1.2;
+      /* Kräftigere Skalierung (142%) für 55-Zoll-Hochformat-Display */
+      zoom: 1.42;
     }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--graphite-10);
       color: var(--text-main);
-      height: 83.333vh;
-      width: 83.333vw;
+      height: 70.422vh;
+      width: 70.422vw;
       overflow: hidden;
-      border-top: 7px solid var(--brand-50);
+      border-top: 6px solid var(--brand-50);
       display: flex;
       flex-direction: column;
       position: relative;
@@ -95,8 +95,8 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 32px 40px 28px;
-      gap: 22px;
+      padding: 26px 32px 24px;
+      gap: 18px;
       max-width: 1080px;
       width: 100%;
       margin: 0 auto;
@@ -108,12 +108,12 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 20px;
+      gap: 18px;
     }
     .greeting-block {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 5px;
     }
     .season-pill {
       display: inline-flex;
@@ -135,10 +135,10 @@
       font-size: 46px;
       font-weight: 700;
       letter-spacing: -0.025em;
-      line-height: 1.1;
+      line-height: 1.08;
     }
     .sub-greeting {
-      font-size: 19px;
+      font-size: 18px;
       color: var(--text-muted);
       font-weight: 400;
     }
@@ -147,7 +147,7 @@
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 12px;
+      gap: 10px;
     }
     .clock-box {
       text-align: right;
@@ -160,7 +160,7 @@
       line-height: 1;
     }
     #clock-date {
-      font-size: 16px;
+      font-size: 15px;
       color: var(--text-muted);
       margin-top: 4px;
     }
@@ -172,7 +172,7 @@
       gap: 12px;
       background: var(--card-bg);
       border: 1px solid var(--border-subtle);
-      padding: 10px 18px;
+      padding: 9px 16px;
       border-radius: 999px;
       box-shadow: var(--shadow-card);
       cursor: pointer;
@@ -193,10 +193,10 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       min-height: 0;
       overflow-y: auto;
-      padding-right: 4px;
+      padding-right: 2px;
     }
     .agenda-section::-webkit-scrollbar { width: 0; }
 
@@ -215,19 +215,19 @@
     .hero-card {
       background: var(--card-bg);
       border-radius: 20px;
-      padding: 26px 30px;
+      padding: 24px 28px;
       box-shadow: var(--shadow-hero);
       border-left: 6px solid var(--brand-50);
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 15px;
       transition: all 0.35s ease;
     }
     .hero-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
     }
     .live-badge {
       display: inline-flex;
@@ -255,10 +255,10 @@
     .hero-time-room {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
     .hero-time {
-      font-size: 28px;
+      font-size: 27px;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
@@ -280,11 +280,11 @@
     .hero-main {
       display: flex;
       align-items: center;
-      gap: 22px;
+      gap: 20px;
     }
     .cat-icon-box {
-      width: 68px;
-      height: 68px;
+      width: 66px;
+      height: 66px;
       border-radius: 18px;
       display: flex;
       align-items: center;
@@ -307,7 +307,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-top: 14px;
+      padding-top: 12px;
       border-top: 1px solid var(--border-subtle);
       font-size: 16px;
       color: var(--text-muted);
@@ -318,12 +318,12 @@
     .upcoming-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 11px;
     }
     .apt-card {
       background: var(--card-bg);
       border-radius: 16px;
-      padding: 18px 24px;
+      padding: 16px 22px;
       box-shadow: var(--shadow-card);
       border: 1px solid var(--border-subtle);
       cursor: pointer;
@@ -332,7 +332,7 @@
     .apt-row {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 15px;
     }
     .apt-icon-sm {
       width: 44px;
@@ -384,18 +384,18 @@
 
     /* Vergangene Termine (kleiner & dezent im Hintergrund) */
     .past-section {
-      margin-top: 6px;
+      margin-top: 4px;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      opacity: 0.58;
+      opacity: 0.6;
       transform: scale(0.97);
       transform-origin: top center;
     }
     .past-card {
       background: var(--card-bg);
       border-radius: 12px;
-      padding: 11px 18px;
+      padding: 10px 16px;
       border: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
@@ -410,32 +410,32 @@
     .empty-card {
       background: var(--card-bg);
       border-radius: 20px;
-      padding: 32px 30px;
+      padding: 28px 26px;
       text-align: center;
       box-shadow: var(--shadow-card);
       border: 1px solid var(--border-subtle);
     }
-    .empty-card h2 { font-size: 22px; margin-bottom: 6px; }
+    .empty-card h2 { font-size: 23px; margin-bottom: 6px; }
     .empty-card p { color: var(--text-muted); font-size: 16px; }
 
     /* 3. Moderner News- & Video-Bereich */
     .news-box {
       background: var(--card-bg);
       border-radius: 20px;
-      padding: 18px 24px;
+      padding: 16px 22px;
       box-shadow: var(--shadow-card);
       border: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 18px;
       cursor: pointer;
       position: relative;
       overflow: hidden;
-      min-height: 132px;
+      min-height: 124px;
     }
     .news-media {
-      width: 156px;
-      height: 96px;
+      width: 148px;
+      height: 92px;
       border-radius: 14px;
       background: linear-gradient(135deg, #1F1F1F 0%, #3A3A3A 100%);
       display: flex;
@@ -471,12 +471,12 @@
       font-size: 20px;
       font-weight: 700;
       line-height: 1.25;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
     }
     .news-summary {
       font-size: 15px;
       color: var(--text-muted);
-      line-height: 1.4;
+      line-height: 1.38;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -509,16 +509,16 @@
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 36px;
+      padding: 28px;
     }
     .modal-backdrop.open { display: flex; }
     .modal-card {
       background: var(--card-bg);
       color: var(--text-main);
       border-radius: 24px;
-      padding: 34px;
+      padding: 30px;
       width: 100%;
-      max-width: 640px;
+      max-width: 600px;
       box-shadow: 0 24px 60px rgba(0,0,0,0.3);
       border-top: 6px solid var(--brand-50);
     }
@@ -526,33 +526,33 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
-    .modal-title { font-size: 26px; font-weight: 700; }
+    .modal-title { font-size: 24px; font-weight: 700; }
     .pill-btn {
       background: var(--brand-50);
       color: #FFFFFF;
       border: none;
-      padding: 12px 26px;
+      padding: 11px 24px;
       border-radius: 999px;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
       cursor: pointer;
     }
     .forecast-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin: 22px 0;
+      gap: 10px;
+      margin: 20px 0;
     }
     .forecast-item {
       background: var(--graphite-10);
       border-radius: 16px;
-      padding: 16px 12px;
+      padding: 14px 10px;
       text-align: center;
     }
     .forecast-hour { font-size: 14px; color: var(--text-muted); margin-bottom: 8px; }
-    .forecast-temp { font-size: 22px; font-weight: 700; margin-top: 8px; }
+    .forecast-temp { font-size: 21px; font-weight: 700; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -642,7 +642,7 @@
         <div class="modal-title" id="modal-news-title">News Detail</div>
         <button class="pill-btn" onclick="closeModals()">Schließen</button>
       </div>
-      <div id="modal-news-visual" style="border-radius:16px;overflow:hidden;margin-bottom:18px;background:#1A1A1A;height:220px;display:flex;align-items:center;justify-content:center;"></div>
+      <div id="modal-news-visual" style="border-radius:16px;overflow:hidden;margin-bottom:18px;background:#1A1A1A;height:210px;display:flex;align-items:center;justify-content:center;"></div>
       <p style="font-size:18px;line-height:1.55;color:var(--text-main);" id="modal-news-body"></p>
     </div>
   </div>
@@ -841,7 +841,6 @@
       todays.forEach(item => {
         const start = parseSharePointDate(item.datumZeit);
         const diffMin = (start - now) / 60000;
-        // Jeder Termin, der vor mehr als 60 Minuten begonnen hat, wandert konsequent in "Bereits stattgefunden"
         if (diffMin < -60 && !isPreviewNextDays) {
           past.push(item);
         } else {
@@ -887,7 +886,6 @@
             </div>
           </div>`;
       } else if (past.length > 0) {
-        // Alle heutigen Termine sind beendet -> dezente Tagesabschluss-Karte statt veraltetem Hero-Termin
         heroEl.innerHTML = `
           <div class="empty-card">
             <h2>Herzlich willkommen</h2>
