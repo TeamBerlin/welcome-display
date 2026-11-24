@@ -406,17 +406,17 @@
     .past-left { display: flex; align-items: center; gap: 10px; }
     .past-check { color: #16A34A; font-weight: 700; }
 
-    /* Empty State */
+    /* Empty / Feierabend State */
     .empty-card {
       background: var(--card-bg);
       border-radius: 20px;
-      padding: 40px 32px;
+      padding: 32px 30px;
       text-align: center;
       box-shadow: var(--shadow-card);
       border: 1px solid var(--border-subtle);
     }
-    .empty-card h2 { font-size: 24px; margin-bottom: 8px; }
-    .empty-card p { color: var(--text-muted); font-size: 17px; }
+    .empty-card h2 { font-size: 22px; margin-bottom: 6px; }
+    .empty-card p { color: var(--text-muted); font-size: 16px; }
 
     /* 3. Moderner News- & Video-Bereich */
     .news-box {
@@ -652,16 +652,14 @@
     const WEATHER_LAT = 52.52;
     const WEATHER_LON = 13.405;
 
-    // SharePoint-Zeitzonen-Korrektur: Eure SP-Site speichert in US Pacific Time (UTC-8 / -7),
-    // wodurch 08:30 Uhr als 13:30Z bzw. 16:30Z ankommt -> wir korrigieren auf die echte Berliner Ortszeit.
-    const SHAREPOINT_HOUR_OFFSET = -5; // 13:30Z -> 08:30 Uhr, 20:00Z -> 15:00 Uhr
+    // SharePoint-Zeitzonen-Korrektur (US Pacific -> Berliner Ortszeit)
+    const SHAREPOINT_HOUR_OFFSET = -5;
 
-    let internetTimeOffsetMs = 0; // Differenz zwischen Internet-Atomzeit und verstellter PC-Uhr
+    let internetTimeOffsetMs = 0;
     let appointments = [];
     let weatherData = null;
     let currentNewsIdx = 0;
 
-    // Exakte Internet-Uhrzeit abrufen (unabhängig von der PC-Systemuhr)
     async function syncInternetTime() {
       try {
         const reqStart = Date.now();
@@ -670,15 +668,12 @@
         const reqEnd = Date.now();
         const latency = (reqEnd - reqStart) / 2;
         if (data && data.dateTime) {
-          // Berechne exakten Zeitstempel aus der Berliner Internetzeit
           const serverLocal = new Date(data.dateTime);
-          // Vergleich gegen lokale Systemzeit
           internetTimeOffsetMs = (serverLocal.getTime() + latency) - Date.now();
           updateEnvironment();
           renderAppointments();
         }
       } catch (e) {
-        // Fallback über HTTP Date-Header von Open-Meteo
         try {
           const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LAT}&longitude=${WEATHER_LON}&current=temperature_2m`);
           const dateHeader = res.headers.get("Date");
@@ -694,10 +689,8 @@
       }
     }
 
-    // Liefert immer die exakte aktuelle Berliner Zeit (inkl. Internet-Korrektur)
     function getNowBerlin() {
       const correctedMs = Date.now() + internetTimeOffsetMs;
-      // Erzwinge Europe/Berlin Zeitzone unabhängig von den Windows-Zeitzoneneinstellungen des PCs
       const berlinStr = new Date(correctedMs).toLocaleString("en-US", { timeZone: "Europe/Berlin" });
       return new Date(berlinStr);
     }
@@ -794,7 +787,6 @@
       }
     }
 
-    // Wandelt SharePoint-UTC-Zeitstempel exakt in die eingetragene Berliner Ortszeit um
     function parseSharePointDate(isoStr) {
       if (!isoStr) return getNowBerlin();
       const clean = isoStr.replace("Z", "");
@@ -849,6 +841,7 @@
       todays.forEach(item => {
         const start = parseSharePointDate(item.datumZeit);
         const diffMin = (start - now) / 60000;
+        // Jeder Termin, der vor mehr als 60 Minuten begonnen hat, wandert konsequent in "Bereits stattgefunden"
         if (diffMin < -60 && !isPreviewNextDays) {
           past.push(item);
         } else {
@@ -856,7 +849,7 @@
         }
       });
 
-      const heroItem = currentAndFuture.length > 0 ? currentAndFuture.shift() : past.pop();
+      const heroItem = currentAndFuture.length > 0 ? currentAndFuture.shift() : null;
 
       if (heroItem) {
         const start = parseSharePointDate(heroItem.datumZeit);
@@ -892,6 +885,13 @@
               <span>Ihr Ansprechpartner: <strong>${heroItem.gastgeber || "Team Vor Ort"}</strong></span>
               <span>Thema: <strong>${heroItem.kategorie || "Beratung"}</strong></span>
             </div>
+          </div>`;
+      } else if (past.length > 0) {
+        // Alle heutigen Termine sind beendet -> dezente Tagesabschluss-Karte statt veraltetem Hero-Termin
+        heroEl.innerHTML = `
+          <div class="empty-card">
+            <h2>Herzlich willkommen</h2>
+            <p>Alle geplanten Termine für heute haben bereits stattgefunden.</p>
           </div>`;
       }
 
@@ -1029,14 +1029,13 @@
       document.getElementById("news-modal").classList.remove("open");
     }
 
-    // Start & Intervalle
     syncInternetTime();
     updateEnvironment();
     renderNews();
     fetchAppointments();
     fetchWeather();
 
-    setInterval(syncInternetTime, 300000); // Alle 5 Min. Internet-Atomzeit nachjustieren
+    setInterval(syncInternetTime, 300000);
     setInterval(updateEnvironment, 10000);
     setInterval(renderAppointments, 30000);
     setInterval(fetchAppointments, 60000);
